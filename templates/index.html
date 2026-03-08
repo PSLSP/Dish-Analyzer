@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор блюд</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #5568d3;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+        }
+        
+        .btn-analyze {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-analyze:hover {
+            background: #218838;
+        }
+        
+        .btn-clear {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-clear:hover {
+            background: #c82333;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .image-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .result-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .result-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .dish-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .info-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .ingredients-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .ingredients-list li {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .recipe-ingredients {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .recipe-ingredient {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .cooking-steps {
+            counter-reset: step-counter;
+        }
+        
+        .cooking-step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            counter-increment: step-counter;
+            position: relative;
+            padding-left: 50px;
+        }
+        
+        .cooking-step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            background: #ffc107;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .nutrition-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .nutrition-table th,
+        .nutrition-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .nutrition-table th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .nutrition-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .nutrition-table tr:hover {
+            background: #f1f1f1;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ Анализатор блюд</h1>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <label for="fileInput" class="file-input-label">
+                    📁 Выберите изображение блюда
+                </label>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            
+            <div class="buttons">
+                <button id="analyzeBtn" class="btn-analyze" disabled>Анализ блюда</button>
+                <button id="clearBtn" class="btn-clear">Очистить</button>
+            </div>
+            
+            <div id="imagePreview" class="image-preview hidden"></div>
+        </div>
+        
+        <div id="loading" class="loading hidden">
+            <p id="loadingText">⏳ Анализ изображения и генерация рецепта...</p>
+        </div>
+        
+        <div id="error" class="error hidden"></div>
+        
+        <div id="results" class="results hidden">
+            <!-- Результаты будут вставлены сюда -->
+        </div>
+    </div>
+    
+    <script>
+        let currentFilepath = null;
+        let currentImageBase64 = null;
+        
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const results = document.getElementById('results');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const errorDiv = document.getElementById('error');
+        
+        // Загрузка файла
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentFilepath = data.filepath;
+                    currentImageBase64 = data.image_base64;
+                    
+                    // Отображаем изображение
+                    imagePreview.innerHTML = `<img src="${data.image_base64}" alt="Загруженное изображение">`;
+                    imagePreview.classList.remove('hidden');
+                    
+                    // Активируем кнопку анализа
+                    analyzeBtn.disabled = false;
+                    
+                    // Автоматически запускаем анализ
+                    await analyzeDish();
+                } else {
+                    showError(data.error || 'Ошибка при загрузке файла');
+                }
+            } catch (err) {
+                showError('Ошибка при загрузке файла: ' + err.message);
+            }
+        });
+        
+        // Кнопка анализа
+        analyzeBtn.addEventListener('click', analyzeDish);
+        
+        // Кнопка очистки
+        clearBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            currentFilepath = null;
+            currentImageBase64 = null;
+            imagePreview.classList.add('hidden');
+            results.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            analyzeBtn.disabled = true;
+        });
+        
+        // Функция обновления сообщения загрузки
+        function updateLoadingMessage(message) {
+            if (loadingText) {
+                loadingText.textContent = '⏳ ' + message;
+            }
+        }
+        
+        // Функция анализа с использованием Server-Sent Events
+        async function analyzeDish() {
+            if (!currentFilepath) {
+                showError('Сначала выберите файл');
+                return;
+            }
+            
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            analyzeBtn.disabled = true;
+            
+            try {
+                // Отправляем запрос на анализ
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filepath: currentFilepath })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка при подключении к серверу');
+                }
+                
+                // Читаем поток событий
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let resultData = null;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    
+                    // Парсим SSE события
+                    // Формат: event: type\ndata: json\n\n
+                    const events = buffer.split('\n\n');
+                    buffer = events.pop() || ''; // Оставляем неполное событие в буфере
+                    
+                    for (const eventBlock of events) {
+                        if (!eventBlock.trim()) continue;
+                        
+                        let eventType = null;
+                        let eventData = null;
+                        
+                        const lines = eventBlock.split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('event: ')) {
+                                eventType = line.substring(7).trim();
+                            } else if (line.startsWith('data: ')) {
+                                eventData = line.substring(6).trim();
+                            }
+                        }
+                        
+                        if (eventType && eventData) {
+                            try {
+                                const data = JSON.parse(eventData);
+                                
+                                if (eventType === 'progress') {
+                                    // Обновляем сообщение о прогрессе
+                                    updateLoadingMessage(data.message);
+                                } else if (eventType === 'complete') {
+                                    // Получен финальный результат
+                                    resultData = data;
+                                } else if (eventType === 'error') {
+                                    // Произошла ошибка
+                                    throw new Error(data.error || 'Неизвестная ошибка');
+                                }
+                            } catch (e) {
+                                console.error('Ошибка парсинга данных:', e, eventData);
+                            }
+                        }
+                    }
+                }
+                
+                // Обрабатываем последнее событие из буфера
+                if (buffer.trim()) {
+                    let eventType = null;
+                    let eventData = null;
+                    const lines = buffer.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.substring(7).trim();
+                        } else if (line.startsWith('data: ')) {
+                            eventData = line.substring(6).trim();
+                        }
+                    }
+                    if (eventType && eventData) {
+                        try {
+                            const data = JSON.parse(eventData);
+                            if (eventType === 'complete') {
+                                resultData = data;
+                            } else if (eventType === 'error') {
+                                throw new Error(data.error || 'Неизвестная ошибка');
+                            }
+                        } catch (e) {
+                            console.error('Ошибка парсинга данных:', e);
+                        }
+                    }
+                }
+                
+                // Обрабатываем финальный результат
+                if (resultData) {
+                    if (resultData.error) {
+                        showError(resultData.error);
+                    } else {
+                        displayResults(resultData);
+                    }
+                }
+                
+            } catch (err) {
+                showError('Ошибка при анализе: ' + err.message);
+            } finally {
+                loading.classList.add('hidden');
+                analyzeBtn.disabled = false;
+            }
+        }
+        
+        // Отображение результатов
+        function displayResults(data) {
+            let html = '';
+            
+            // Информация о блюде
+            if (data.dish_analysis) {
+                const dish = data.dish_analysis;
+                html += `
+                    <div class="result-section">
+                        <h2>📋 Информация о блюде</h2>
+                        <div class="dish-info">
+                            <div class="info-item">
+                                <strong>Название:</strong>
+                                ${dish.dish_name || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Кухня:</strong>
+                                ${dish.cuisine || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Уверенность:</strong>
+                                ${(dish.confidence * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                        ${dish.ingredients ? `
+                            <div>
+                                <strong>Ингредиенты:</strong>
+                                <ul class="ingredients-list">
+                                    ${dish.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Рецепт
+            if (data.recipe) {
+                const recipe = data.recipe.recipe;
+                html += `
+                    <div class="result-section">
+                        <h2>📝 Рецепт</h2>
+                        <div class="dish-info">
+                            <div class="info-item">
+                                <strong>Название:</strong> ${recipe.name || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Кухня:</strong> ${recipe.cuisine || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Порций:</strong> ${recipe.servings || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Время подготовки:</strong> ${recipe.prep_time || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Время приготовления:</strong> ${recipe.cook_time || 'Не указано'}
+                            </div>
+                            <div class="info-item">
+                                <strong>Общее время:</strong> ${recipe.total_time || 'Не указано'}
+                            </div>
+                        </div>
+                        
+                        ${recipe.ingredients ? `
+                            <div>
+                                <strong>Ингредиенты:</strong>
+                                <div class="recipe-ingredients">
+                                    ${recipe.ingredients.map(ing => `
+                                        <div class="recipe-ingredient">
+                                            <strong>${ing.name}</strong>: ${ing.amount || ''}
+                                            ${ing.notes ? `<br><small>${ing.notes}</small>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                // Этапы приготовления
+                if (data.recipe.cooking_steps) {
+                    html += `
+                        <div class="result-section">
+                            <h2>👨‍🍳 Этапы приготовления</h2>
+                            <div class="cooking-steps">
+                                ${data.recipe.cooking_steps.map(step => `
+                                    <div class="cooking-step">
+                                        <strong>${step.description || ''}</strong>
+                                        ${step.duration ? `<br><small>Время: ${step.duration}</small>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // КБЖУ таблица
+                if (data.recipe.nutrition) {
+                    const nut = data.recipe.nutrition;
+                    html += `
+                        <div class="result-section">
+                            <h2>🥗 Питательная ценность</h2>
+                            <table class="nutrition-table">
+                                <thead>
+                                    <tr>
+                                        <th>Параметр</th>
+                                        <th>На порцию</th>
+                                        <th>На 100г</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Калории (ккал)</strong></td>
+                                        <td>${nut.per_serving?.calories || '-'}</td>
+                                        <td>${nut.per_100g?.calories || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Белки (г)</strong></td>
+                                        <td>${nut.per_serving?.protein || '-'}</td>
+                                        <td>${nut.per_100g?.protein || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Жиры (г)</strong></td>
+                                        <td>${nut.per_serving?.fat || '-'}</td>
+                                        <td>${nut.per_100g?.fat || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Углеводы (г)</strong></td>
+                                        <td>${nut.per_serving?.carbs || '-'}</td>
+                                        <td>${nut.per_100g?.carbs || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Хлебные единицы (ХЕ)</strong></td>
+                                        <td>${nut.per_serving?.bread_units || '-'}</td>
+                                        <td>${nut.per_100g?.bread_units || '-'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Сгенерированное изображение
+            if (data.generated_image && data.generated_image.image_base64) {
+                html += `
+                    <div class="result-section">
+                        <h2>🖼️ Сгенерированное изображение</h2>
+                        <div class="image-preview">
+                            <img src="${data.generated_image.image_base64}" alt="Сгенерированное изображение блюда">
+                        </div>
+                    </div>
+                `;
+            }
+            
+            results.innerHTML = html;
+            results.classList.remove('hidden');
+        }
+        
+        // Показать ошибку
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
+
