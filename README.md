@@ -221,8 +221,6 @@ dish-analyzer/
 ├── .env                # Ваши ключи (не коммитить!)
 ├── .env.example        # Пример переменных (опционально)
 ├── README.md
-├── docs/
-│   └── HANDOFF_DOCUMENTATION.md   # Документация для хенд-оффа
 ├── templates/
 │   └── index.html      # Страница веб-интерфейса
 ├── uploads/            # Загруженные файлы (веб)
